@@ -14,7 +14,12 @@ on run
 					set name of aFile to text (SymbolNumberChoiseRS + 1) thru -1 of (get name of aFile)
 				end tell
 			end repeat
+			display dialog "Finished" with title "File order randomizer" buttons {"Return", "Exit"} cancel button "Exit"
+			if the button returned of the result is "Return" then
+				return on run
+			end if
 		end if
+		
 	else if the button returned of the result is "Randomize order" then
 		set SymbolsNumberChoisesRO to {"2", "3", "4", "5", "6", "7"}
 		set SymbolNumberChoiseRO to choose from list SymbolsNumberChoisesRO with prompt "Select how many digits you want to add:" default items {"4"} cancel button name "Exit"
@@ -36,20 +41,22 @@ on run
 		else if (SymbolNumberChoiseRO = {"7"}) then
 			set RangeStart to 1000000
 			set RangeEnd to 9999999
-		else if SymbolNumberChoiseRO is false then
-			stop
 		end if
 		
-		set userFolder to path to home folder from user domain
-		set whichFile to choose file default location userFolder with prompt "Files to add " & SymbolNumberChoiseRO & " random numbers:" with multiple selections allowed
-		repeat with aFile in whichFile
-			tell application "Finder"
-				set name of aFile to ((random number from RangeStart to RangeEnd) as text) & ("_" as text) & (name of aFile as text)
-			end tell
-		end repeat
-	end if
-	display dialog "Finished" with title "File order randomizer" buttons {"Return", "Exit"} cancel button "Exit"
-	if the button returned of the result is "Return" then
-		return on run
+		if SymbolNumberChoiseRO is false then
+			stop
+		else
+			set userFolder to path to home folder from user domain
+			set whichFile to choose file default location userFolder with prompt "Files to add " & SymbolNumberChoiseRO & " random numbers:" with multiple selections allowed
+			repeat with aFile in whichFile
+				tell application "Finder"
+					set name of aFile to ((random number from RangeStart to RangeEnd) as text) & ("_" as text) & (name of aFile as text)
+				end tell
+			end repeat
+			display dialog "Finished" with title "File order randomizer" buttons {"Return", "Exit"} cancel button "Exit"
+			if the button returned of the result is "Return" then
+				return on run
+			end if
+		end if
 	end if
 end run
