@@ -27,4 +27,8 @@ There is simple icon in repository if you need one.
 
 There are commented strings for Linux Mint if you want to compile this app for it. Don't forget to // macOS strings.
 
+**Screenshots**
+
+![Screenshots of File Order Randomizer](https://github.com/vulpes-vulpeos/File-Order-Randomizer/blob/main/Screenshots.png)
+
 Tested on macOS Big Sur.
