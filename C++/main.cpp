@@ -3,7 +3,6 @@
 #include <filesystem>
 #include <random>
 #include <cstdio>
-#include <chrono>
 
 class MyWindow : public Gtk::Window {
 public:
