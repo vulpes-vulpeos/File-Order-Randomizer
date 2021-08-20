@@ -4,6 +4,9 @@
 #include <random>
 #include <cstdio>
 
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//                                                                                           Window class
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 class MyWindow : public Gtk::Window {
 public:
   MyWindow();
@@ -11,6 +14,7 @@ public:
 
 protected:
   //function prototypes
+  void resetApp();
   void on_button_remove_clicked();
   void on_button_randomize_clicked();
   void on_button_browse_clicked();
@@ -18,7 +22,7 @@ protected:
   void on_button_removeRusSongs_clicked();
   void on_button_refresh_clicked();
   void on_folder_dialog_response(int response_id, Glib::RefPtr<Gtk::FileChooserNative>& dialog);
-  void refreshFileList(std::string dialog);
+  void refreshFileList(std::string dialog); 
 
   //List of window elements
   Gtk::Grid m_window_grid;
@@ -42,7 +46,133 @@ protected:
   //Variables
   std::string rememberPath;
   ModelColumns m_Columns;
+
 };
+
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//                                                                                        Window constructor
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+MyWindow::MyWindow() : 
+                       m_path_label(),
+                       m_filesList_label ("Files in selected folder:"),
+                       m_randomize_label ("Digits in random number:"),
+                       m_button_browse("Browse"), 
+                       m_button_openSelectedDirectory("Open selected folder"), 
+                       m_filesList (),
+                       m_button_refresh("Refresh list"),
+                       m_button_removeRusSongs("Remove RU songs"),
+                       m_button_randomize("Add"),
+                       m_spinbutton_randomize (Gtk::Adjustment::create(4, 1, 7, 1, 1, 0)),  
+                       m_button_remove("Remove")
+
+
+{
+  set_title("File Order Randomizer");
+
+// Elements margins:
+  m_window_grid.set_margin(10);
+  m_path_label.set_margin_top(10);    //left
+  m_path_label.set_margin_start(10);
+  m_path_label.set_margin_end(10);    //right
+
+  m_button_browse.set_margin(10);
+  m_button_openSelectedDirectory.set_margin(10);
+
+  m_filesList_label.set_margin_start(10);
+  m_filesList_label.set_margin_top(10);
+  m_filesList_label.set_margin_end(10);
+
+  m_ScrollableWindow.set_margin(10);
+
+  m_button_refresh.set_margin(10);
+  m_button_removeRusSongs.set_margin(10);
+
+  m_randomize_label.set_margin(10);
+  m_spinbutton_randomize.set_margin(10);
+
+  m_button_randomize.set_margin(10);
+  m_button_remove.set_margin(10);
+
+//list of files names forming
+  m_ScrollableWindow.set_child(m_filesList);
+  m_ScrollableWindow.set_policy(Gtk::PolicyType::AUTOMATIC, Gtk::PolicyType::AUTOMATIC); //show scroll bar only when scrolling
+  m_ScrollableWindow.set_expand(); //make element expandable -> makes all elements in grid expandable
+  m_ScrollableWindow.set_min_content_height (205);
+  m_refTreeModel = Gtk::ListStore::create(m_Columns);
+  m_filesList.set_model(m_refTreeModel);
+  m_filesList.set_headers_visible(false); //disables columns titles
+  m_filesList.append_column("Files names:", m_Columns.m_fileNameColumn);
+
+// connecting functions to buttons
+  m_button_browse.signal_clicked().connect(sigc::mem_fun(*this, &MyWindow::on_button_browse_clicked));
+  m_button_openSelectedDirectory.signal_clicked().connect(sigc::mem_fun(*this, &MyWindow::on_button_openSelDir_clicked));
+  m_button_refresh.signal_clicked().connect(sigc::mem_fun(*this, &MyWindow::on_button_refresh_clicked));
+  m_button_removeRusSongs.signal_clicked().connect(sigc::mem_fun(*this, &MyWindow::on_button_removeRusSongs_clicked));
+  m_button_randomize.signal_clicked().connect(sigc::mem_fun(*this, &MyWindow::on_button_randomize_clicked));
+  m_button_remove.signal_clicked().connect(sigc::mem_fun(*this, &MyWindow::on_button_remove_clicked));
+
+// Adding elements into window main grid
+  m_window_grid.attach(m_path_label, 0, 0, 2);
+
+  m_window_grid.attach(m_button_browse, 0, 1);
+  m_window_grid.attach(m_button_openSelectedDirectory, 1, 1);
+  
+  m_window_grid.attach(m_filesList_label, 0, 2);
+
+  m_window_grid.attach(m_ScrollableWindow, 0, 3, 2);
+
+  m_window_grid.attach(m_button_refresh, 0, 4);
+  m_window_grid.attach(m_button_removeRusSongs, 1, 4);
+
+  m_window_grid.attach(m_randomize_label, 0, 5);
+  m_window_grid.attach(m_spinbutton_randomize, 1, 5);
+
+  m_window_grid.attach(m_button_randomize, 0, 6);
+  m_window_grid.attach(m_button_remove, 1, 6);
+
+// Connecting grid to the window
+  set_child(m_window_grid);
+
+  resetApp();
+  on_folderNotExists_error();
+}
+
+MyWindow::~MyWindow()
+{
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//                                                                                              Functions
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//                                                                                        <<<Refresh file list>>>
+
+void MyWindow::refreshFileList(std::string dialog){
+  rememberPath = dialog;
+  m_refTreeModel->clear();
+  for (const auto & entry : std::filesystem::directory_iterator(dialog)){
+  std::string fileName = entry.path();
+  int index = fileName.find_last_of("/\\");
+  fileName = fileName.substr(index+1);
+
+  if (fileName != ".DS_Store" && fileName != ".localized" && fileName != "$RECYCLE.BIN" && 
+      fileName != ".fseventsd" && fileName != ".Spotlight-V100" && fileName != "System Volume Information"){ //ignoring macOS junk
+  auto row = *(m_refTreeModel->append());
+  row[m_Columns.m_fileNameColumn] = static_cast<Glib::ustring>(fileName);}}
+
+  m_refTreeModel->set_sort_column( m_Columns.m_fileNameColumn, Gtk::SortType::ASCENDING);
+}
+
+//                                                                                        <<<Reset app window>>>
+void MyWindow::resetApp()
+{
+  m_refTreeModel->clear();
+  m_path_label.set_text("Press browse button to select a folder");
+  m_button_openSelectedDirectory.set_sensitive(false);
+  m_button_refresh.set_sensitive(false);
+  m_button_removeRusSongs.set_sensitive(false);
+  m_button_randomize.set_sensitive(false);
+  m_button_remove.set_sensitive(false);
+}
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //                                                                                          Buttons functions
@@ -72,24 +202,9 @@ void MyWindow::on_button_browse_clicked(){
     default: {std::cout << "Unexpected button clicked: " << response_id << std::endl; break;}}
 }
 
-void MyWindow::refreshFileList(std::string dialog){
-  rememberPath = dialog;
-  m_refTreeModel->clear();
-  for (const auto & entry : std::filesystem::directory_iterator(dialog)){
-  std::string fileName = entry.path();
-  int index = fileName.find_last_of("/\\");
-  fileName = fileName.substr(index+1);
-
-  if (fileName != ".DS_Store" && fileName != ".localized" && fileName != "$RECYCLE.BIN" && 
-      fileName != ".fseventsd" && fileName != ".Spotlight-V100" && fileName != "System Volume Information"){
-  auto row = *(m_refTreeModel->append());
-  row[m_Columns.m_fileNameColumn] = static_cast<Glib::ustring>(fileName);}}
-
-  m_refTreeModel->set_sort_column( m_Columns.m_fileNameColumn, Gtk::SortType::ASCENDING);
-}
-
 //                                                                              <<<Button - Open delected folder>>>
 void MyWindow::on_button_openSelDir_clicked(){
+  if(!std::filesystem::exists(rememberPath.c_str())){resetApp(); m_path_label.set_text("ERROR: Folder doesn't exist anymore (╯°□°)╯┻━┻");} //checking if path still exists
   std::string command = "open \"" + rememberPath + "\"";
   //std::string command = "nemo \"" + rememberPath + "\""; //Command for Linux mint.
   const char * char_command = command.c_str();
@@ -98,11 +213,13 @@ void MyWindow::on_button_openSelDir_clicked(){
 
 //                                                                                   <<<Button - Refresh list>>>
 void MyWindow::on_button_refresh_clicked(){
+  if(!std::filesystem::exists(rememberPath.c_str())){resetApp(); m_path_label.set_text("ERROR: Folder doesn't exist anymore (╯°□°)╯┻━┻");}
   refreshFileList(rememberPath);
 }
 
 //                                                                                   <<<Button - Remove RU songs>>
 void MyWindow::on_button_removeRusSongs_clicked(){
+  if(!std::filesystem::exists(rememberPath.c_str())){resetApp(); m_path_label.set_text("ERROR: Folder doesn't exist anymore (╯°□°)╯┻━┻");}
   std::string triggers[] = {"а", "А", "е", "Е", "ё", "Ё", "и", "И", "о", "О", "у", "У", "э", "Э", "ю", "Ю", "я", "Я", "MORGENSHTERN", "V $ X V Prince", "GAYAZOV$ BROTHER$", "ONUKA", 
   "Slava Marlow", "Niletto", "Zivert", "Johnyboy", "Nebezao", "ALEXEMELYA", "Jah Khalib", "BOOSIN", "SHLAKOBLOCHINA"};
   int triggersLenght = sizeof(triggers)/sizeof(triggers[0]);
@@ -133,6 +250,7 @@ void MyWindow::on_button_removeRusSongs_clicked(){
 
 //                                                                                 <<<Button - Randomize>>>
 void MyWindow::on_button_randomize_clicked(){
+  if(!std::filesystem::exists(rememberPath.c_str())){resetApp(); m_path_label.set_text("ERROR: Folder doesn't exist anymore (╯°□°)╯┻━┻");}
   refreshFileList(rememberPath);
   int i = m_spinbutton_randomize.get_value(); //Value can be from 1 to 7
 
@@ -172,6 +290,7 @@ void MyWindow::on_button_randomize_clicked(){
 
 //                                                                                    <<<Button - Remove randomization>>
 void MyWindow::on_button_remove_clicked(){
+  if(!std::filesystem::exists(rememberPath.c_str())){resetApp(); m_path_label.set_text("ERROR: Folder doesn't exist anymore (╯°□°)╯┻━┻");}
   refreshFileList(rememberPath);
   int i = m_spinbutton_randomize.get_value(); //Value can be from 1 to 7
 
@@ -188,111 +307,6 @@ void MyWindow::on_button_remove_clicked(){
     perror("Couldn't rename file (╯°□°)╯┻━┻");}}
 
   refreshFileList(rememberPath);
-}
-
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//                                                                                        Window constructor
-//--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-MyWindow::MyWindow() : 
-                       m_path_label ("Press browse button to select a folder"), 
-                       m_filesList_label ("Files name to be changed:"),
-                       m_randomize_label ("Digits in random number:"),
-                       m_button_browse("Browse"), 
-                       m_button_openSelectedDirectory("Open selected folder"), 
-                       m_filesList (),
-                       m_button_refresh("Refresh list"),
-                       m_button_removeRusSongs("Remove RU songs"),
-                       m_button_randomize("Add"),
-                       m_spinbutton_randomize (Gtk::Adjustment::create(4, 1, 7, 1, 1, 0)),  
-                       m_button_remove("Remove")
-
-
-{
-  set_title("File Order Randomizer");
-
-// Elements margins:
-  m_window_grid.set_margin(10);
-  m_path_label.set_margin_top(10);    //left
-  m_path_label.set_margin_start(10);
-  m_path_label.set_margin_end(10);    //right
-
-  m_button_browse.set_margin(10);
-  m_button_openSelectedDirectory.set_margin(10);
-  m_button_openSelectedDirectory.set_sensitive(false);
-
-  m_filesList_label.set_margin_start(10);
-  m_filesList_label.set_margin_top(10);
-  m_filesList_label.set_margin_end(10);
-
-  m_ScrollableWindow.set_margin(10);
-
-  m_button_refresh.set_margin(10);
-  m_button_refresh.set_sensitive(false);
-  m_button_removeRusSongs.set_margin(10);
-  m_button_removeRusSongs.set_sensitive(false);
-
-  m_randomize_label.set_margin(10);
-  m_spinbutton_randomize.set_margin(10);
-
-  m_button_randomize.set_margin(10);
-  m_button_randomize.set_sensitive(false);
-  m_button_remove.set_margin(10);
-  m_button_remove.set_sensitive(false);
-
-//Формирование списка файлов
-  m_ScrollableWindow.set_child(m_filesList);
-  m_ScrollableWindow.set_policy(Gtk::PolicyType::AUTOMATIC, Gtk::PolicyType::AUTOMATIC); //show scroll bar only when scrolling
-  m_ScrollableWindow.set_expand(); //make element expandable -> makes all elements in grid expandable
-  m_ScrollableWindow.set_min_content_height (205);
-  m_refTreeModel = Gtk::ListStore::create(m_Columns);
-  m_filesList.set_model(m_refTreeModel);
-  m_filesList.set_headers_visible(false); //disables columns titles
-  m_filesList.append_column("Files names:", m_Columns.m_fileNameColumn);
-
-// connecting functions to buttons
-  m_button_browse.signal_clicked().connect(sigc::mem_fun(*this,
-              &MyWindow::on_button_browse_clicked));
-
-  m_button_openSelectedDirectory.signal_clicked().connect(sigc::mem_fun(*this,
-              &MyWindow::on_button_openSelDir_clicked));
-
-  m_button_refresh.signal_clicked().connect(sigc::mem_fun(*this,
-              &MyWindow::on_button_refresh_clicked));
-
-  m_button_removeRusSongs.signal_clicked().connect(sigc::mem_fun(*this,
-              &MyWindow::on_button_removeRusSongs_clicked));
-
-  m_button_randomize.signal_clicked().connect(sigc::mem_fun(*this,
-              &MyWindow::on_button_randomize_clicked));
-
-  m_button_remove.signal_clicked().connect(sigc::mem_fun(*this,
-              &MyWindow::on_button_remove_clicked));
-
-// Adding elements into window main grid
-  m_window_grid.attach(m_path_label, 0, 0, 2);
-
-  m_window_grid.attach(m_button_browse, 0, 1);
-  m_window_grid.attach(m_button_openSelectedDirectory, 1, 1);
-  
-  m_window_grid.attach(m_filesList_label, 0, 2);
-
-  m_window_grid.attach(m_ScrollableWindow, 0, 3, 2);
-
-  m_window_grid.attach(m_button_refresh, 0, 4);
-  m_window_grid.attach(m_button_removeRusSongs, 1, 4);
-
-  m_window_grid.attach(m_randomize_label, 0, 5);
-  m_window_grid.attach(m_spinbutton_randomize, 1, 5);
-
-  m_window_grid.attach(m_button_randomize, 0, 6);
-  m_window_grid.attach(m_button_remove, 1, 6);
-
-// Connecting grid to the window
-  set_child(m_window_grid);
-}
-
-MyWindow::~MyWindow()
-{
 }
 
 int main(int argc, char* argv[]){
