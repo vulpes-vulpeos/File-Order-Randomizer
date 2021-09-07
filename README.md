@@ -10,25 +10,11 @@ Keyboard shortcuts (cmd+a, cmd+v etc.) stop working if the .app is created in Au
 
 Toolbox.scpt also contains an option to automaticaly move to trash files which names contain this russian letters or artist names and to download a video with youtube-dl.
 
-**C++/gtkmm4:**
+**C++/AppleScript:**
 
-You need gtkmm4 installed for it to run. If you have homebrew installed just type into terminal: ```brew install gtkmm4```
+This version is fully automatic. All you need to do is to select folder and choose what you want to do with files in the folder. The app will automatically count how many digits random number needs, it will detect if file was already randomized and rerandomize it. While unrandomizing it ignores files which do not start with number and automatically counts how many numbers it need to delete (supported separators: "_", ". ").
 
-You can compile it with g++: ```g++ -std=c++2a -Wall \"${file}\" -o \"${file_path}/${file_base_name}\"  `pkg-config gtkmm-4.0 --cflags --libs` ```
-
-To hide terminal window you need to pack main file into minimal .app bundle:
-File Order Randomizer.app
-- Contents
-   - MacOS/main
-   - Resources/main.icns
-   - Info.plist
-
-There is simple icon in repository if you need one.
-
-There are commented strings for Linux Mint if you want to compile this app for it. Don't forget to // macOS strings.
-
-**Screenshots**
-
-![Screenshots of File Order Randomizer](https://github.com/vulpes-vulpeos/File-Order-Randomizer/blob/main/Screenshots.png)
+You can compile it with g++: ```g++ -std=c++2a -O2 -Wall \"${file}\"  -o \"${file_path}/${file_base_name}\" ```
+Or download .app bundle from release section. You'll need to allow it's launch in Settings -> Security &Privacy -> General tab.
 
 Tested on macOS Big Sur.
