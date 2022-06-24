@@ -19,3 +19,5 @@ You can compile it with g++: ```g++ -std=c++2a -O2 -Wall \"${file}\"  -o \"${fil
 Or download .app bundle from release section. You'll need to allow it's launch in Settings -> Security & Privacy -> General tab.
 
 Tested on m1 Air with macOS Monterey.
+
+Idea was taken from this windows app: <https://sourceforge.net/projects/filerandomizer/>
