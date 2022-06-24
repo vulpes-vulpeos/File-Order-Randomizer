@@ -10,8 +10,17 @@ You can create an "app" with Script Editor. Open .scpt file, in menu bar go File
 
 **Bash:**
 
-use ```chmod u+x forand.sh``` to make it executable
+use ```chmod u+x forand.sh``` to make it executable.
 Probably it will also work on Linux.
+
+Usage:
+```
+["/path/to/forand.sh"] [-fur] ["/path/to/folder"]
+-r  randomize files in folder.
+-u  unrandomize files in folder.
+-f  remove files which contain cyrillic letters in their file names.
+```
+
 
 **C++/AppleScript:**
 
