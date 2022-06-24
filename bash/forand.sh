@@ -77,10 +77,10 @@ randomizeFileName()
 
 help ()
 {
-	echo "usage: for [-fur] [\"/path/to/folder\"] ..."
+	echo "usage: [\"/path/to/forand.sh\"] [-fur] [\"/path/to/folder\"] ..."
 	echo "-r  randomize files in folder."
-	echo "-u  unrandomize files in folder.\n-f  filter files in folder."
-	echo "-f  remove files which contain cyrillic letters in their file names"
+	echo "-u  unrandomize files in folder."
+	echo "-f  remove files which contain cyrillic letters in their file names."
 	exit
 }
 
