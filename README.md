@@ -22,11 +22,27 @@ Usage:
 ```
 
 
-**C++/AppleScript:**
+**AppleScript and C++:**
 
 You can compile it with g++: ```g++ -std=c++2a -O2 -Wall \"${file}\"  -o \"${file_path}/${file_base_name}\" ```
 Or download .app bundle from release section. You'll need to allow it's launch in Settings -> Security & Privacy -> General tab.
 
-Tested on m1 Air with macOS Monterey.
+This version uses applescript dialogs as its UI.
+
+**CLI C++:**
+
+You can compile it with g++: ```g++ -std=c++2a -O2 -Wall \"${file}\"  -o \"${file_path}/${file_base_name}\" ```. forand.cpp is main file.
+
+This version has command-line interface and supports external filter list. Put "forand_filterlist.txt" near executable.
+
+Usage:
+```
+["/path/to/forand/executable"] [-fur] ["/path/to/folder"]
+-r  randomize files in folder.
+-u  unrandomize files in folder.
+-f  remove files which contain strings/characters from filter list in their file names.
+```
+
+Tested on m1 Macbook Air with macOS Monterey.
 
 Idea was taken from this windows app: <https://sourceforge.net/projects/filerandomizer/>
