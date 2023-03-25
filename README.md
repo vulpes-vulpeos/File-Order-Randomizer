@@ -43,6 +43,18 @@ Usage:
 -f  remove files which contain strings/characters from filter list in their file names.
 ```
 
-Tested on m1 Macbook Air with macOS Monterey.
+**CLI Go:**
+
+You can compile it with: ```go build -ldflags \"-w -s\" '${file}' ```.
+
+Usage:
+```
+["/path/to/forand/executable"] [-fur] ["/path/to/folder"]
+-r  randomize files in folder.
+-u  unrandomize files in folder.
+-f  remove files which contain strings/characters from filter list in their file names.
+```
+
+Tested on m1 Macbook Air with macOS Ventura.
 
 Idea was taken from this windows app: <https://sourceforge.net/projects/filerandomizer/>
