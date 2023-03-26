@@ -2,25 +2,25 @@ package main
 
 import (
 	"fmt"
-	"regexp"    //for matching provided arguments
+	"math/rand" //for random number generation
 	"os"        //for dir eterator, deleting and renaming files etc.
 	"os/user"   //for username
+	"regexp"    //for matching provided arguments
+	"strconv"   //for int to string convertion
 	"strings"   //for string manipulations
 	"unicode"   //for detecting cyrillic characters
-	"math/rand" //for random number generation
-	"strconv"   //for int to string convertion
 )
 
-func draw_progress_bar(current_percent int){
+func draw_progress_bar(current_percent int) {
 	filler_total_lenght := 60
-	var filler_lenght int = (current_percent*filler_total_lenght)/100
-	space_lenght := filler_total_lenght-filler_lenght
+	var filler_lenght int = (current_percent * filler_total_lenght) / 100
+	space_lenght := filler_total_lenght - filler_lenght
 	bar := strings.Repeat("#", filler_lenght) + strings.Repeat(" ", space_lenght)
 
-	fmt.Print("Working: [", bar, "] ", current_percent,"%\r")
+	fmt.Print("Working: [", bar, "] ", current_percent, "%\r")
 }
 
-func unrand_file_name(file_name string)string{
+func unrand_file_name(file_name string) string {
 	//Search for separators. ". ", "_" are supported
 	index := strings.Index(file_name, ". ")
 	separator_size := 2
@@ -30,29 +30,29 @@ func unrand_file_name(file_name string)string{
 	}
 
 	//Trim file name if any of separators found
-	if index >= 0 {
+	if index > 0 {
 		file_name = file_name[index+separator_size:]
 	}
 
 	return file_name
 }
 
-func print_help(){
+func print_help() {
 	fmt.Print("usage: forand [-fur] [\"/path/to/folder\"] ...\n",
-						"-r  randomize files in folder.\n", 
-						"-u  unrandomize files in folder.\n",
-						"-f  filter files in folder.")
+		"-r  randomize files in folder.\n",
+		"-u  unrandomize files in folder.\n",
+		"-f  filter files in folder.")
 }
 
 func main() {
-	if len(os.Args) <= 1{
+	if len(os.Args) <= 2 {
 		fmt.Println("Error: Total number of arguments is <=1.")
 		print_help()
 		return
 	}
 
 	//Getting args passed to the app
-	var input_arguments[] string
+	var input_arguments []string
 	for _, argument := range os.Args[1:] {
 		input_arguments = append(input_arguments, argument)
 	}
@@ -66,12 +66,11 @@ func main() {
 		print_help()
 		return
 	}
-	//number_of_arg := len(input_arguments[0])-1 //Number of arguments for progress bar
 
 	//Checking if path exists and is a folder
 	for _, path_to_file := range input_arguments[1:] {
 		file_info, err := os.Stat(path_to_file)
-		if os.IsNotExist(err) || !file_info.IsDir(){
+		if os.IsNotExist(err) || !file_info.IsDir() {
 			fmt.Println("Error: Path doesn't exist or is not a directory.", path_to_file)
 			print_help()
 			return
@@ -79,7 +78,7 @@ func main() {
 	}
 
 	//Looping through paths in arguments array
-	for _, path_to_folder := range input_arguments[1:]{
+	for _, path_to_folder := range input_arguments[1:] {
 
 		//Getting list of files in folder
 		folder_contents, _ := os.ReadDir(path_to_folder)
@@ -89,48 +88,49 @@ func main() {
 		random_number_len := len(strconv.Itoa(files_in_folder))
 
 		draw_progress_bar(0)
-		file_counter := 0
+		file_counter, filt_counter, unrand_counter, rand_counter := 0,0,0,0
 
 		//Looping through files in folder
 		for _, entry := range folder_contents {
 
 			//Checking if entry is macOS trash or folder
-			if entry.Name()[0] == '.'{
+			if entry.Name()[0] == '.' {
 				file_counter++
 				continue
 			}
-			if entry.IsDir(){
+			if entry.IsDir() {
 				file_counter++
 				continue
 			}
 			entry_full_path := path_to_folder + "/" + entry.Name()
 
 			//Looping through provided arguments
-			argument_loop: //label for easier loop breaking
-			for _, argument := range input_arguments[0][1:]{
+		argument_loop: //label for easier loop breaking
+			for _, argument := range input_arguments[0][1:] {
 				switch argument {
 				case 'f':
 					//Checking for cyrillic letters in file name
-					for _, char := range entry.Name(){
-						if unicode.Is(unicode.Cyrillic, char){
+					for _, char := range entry.Name() {
+						if unicode.Is(unicode.Cyrillic, char) {
 							//Move file to trash
 							username, _ := user.Current() //Getting username
-							err := os.Rename(entry_full_path, 
-										 "/Users/" + username.Username + "/.Trash/" + entry.Name())
+							err := os.Rename(entry_full_path,
+								"/Users/"+username.Username+"/.Trash/"+entry.Name())
 
 							//Complitely delete file
 							//err := os.Remove(entry_full_path)
 
-  						if err != nil {
-    						fmt.Println(err)
-  						}
+							if err != nil {
+								fmt.Println(err)
+							}
+							filt_counter++
 							break argument_loop //Break argument for loop
 						}
 					}
-					
+
 				case 'u':
 					//Check if first character in file name is digit
-					if !unicode.IsDigit(rune(entry.Name()[0])){
+					if !unicode.IsDigit(rune(entry.Name()[0])) {
 						break //Break switch iteration if not
 					}
 
@@ -139,54 +139,64 @@ func main() {
 
 					//Rename file if any of separators found
 					if len(file_name) < len(entry.Name()) {
-						err := os.Rename(entry_full_path, 
-									path_to_folder + "/" + file_name)
-						
+						err := os.Rename(entry_full_path,
+							path_to_folder+"/"+file_name)
+
 						if err != nil {
-    					fmt.Println(err)
-  					}
+							fmt.Println(err)
+						}
 					}
+					entry_full_path = path_to_folder+"/"+file_name
+					unrand_counter++
 
 				case 'r':
 					//Getting maximum value of random number
 					var random_number_max int = 1
-					for i := 0; i < random_number_len; i++{
-						random_number_max*=10
+					for i := 0; i < random_number_len; i++ {
+						random_number_max *= 10
 					}
-					random_number_max-=1
+					random_number_max -= 1
 
 					//Getting random number and adding leading zeros
 					random_number := strconv.Itoa(rand.Intn(random_number_max))
-					for len(random_number) < random_number_len{
+					for len(random_number) < random_number_len {
 						random_number = "0" + random_number
 					}
 
 					//Check if first character in file name is digit
 					file_name := entry.Name()
-					if unicode.IsDigit(rune(file_name[0])){
+					if unicode.IsDigit(rune(file_name[0])) {
 						file_name = unrand_file_name(entry.Name())
-						entry_full_path = path_to_folder + "/" + file_name
 					}
 
 					//Renaming file
-					err := os.Rename(entry_full_path, 
-								 path_to_folder + "/" + string(random_number) + ". " + file_name)
-						
+					err := os.Rename(entry_full_path,
+						path_to_folder+"/"+string(random_number)+". "+file_name)
+
 					if err != nil {
-    				fmt.Println(err)
-  				}
+						fmt.Println(err)
+					}
+					entry_full_path = path_to_folder+"/"+string(random_number)+". "+file_name
+					rand_counter++
 
 				default:
-					fmt.Println("Unexpected argument O_o")
-					panic(1)
 				}
-			}//for >> input_arguments
+			} //for >> input_arguments
 			//Calculating percent of work done
 			file_counter++
-			var current_percent int = (file_counter*100)/(files_in_folder)
+			var current_percent int = (file_counter * 100) / (files_in_folder)
 			draw_progress_bar(current_percent)
-		}//for >> folder_contents
-	}//for >> paths in arguments
-
-	fmt.Print("\n")
+		} //for >> folder_contents
+		fmt.Print("\n")
+		if filt_counter > 0 {
+			fmt.Print("Files filtered: ", filt_counter, " ")
+		}
+		if unrand_counter > 0 {
+			fmt.Print("Files unrandomized: ", unrand_counter, " ")
+		}
+		if rand_counter > 0 {
+			fmt.Print("Files randomized: ", rand_counter, " ")
+		}
+		fmt.Print("\n")
+	} //for >> paths in arguments
 }
