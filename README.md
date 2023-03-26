@@ -31,7 +31,7 @@ This version uses applescript dialogs as its UI.
 
 **CLI C++:**
 
-You can compile it with g++: ```g++ -std=c++2a -O2 -Wall \"${file}\"  -o \"${file_path}/${file_base_name}\" ```. forand.cpp is main file.
+You can compile it with g++: ```g++ -std=c++2a -O2 -Wall \"${file}\"  -o \"${file_path}/${file_base_name}\" ```.
 
 This version has command-line interface and supports external filter list. Put "forand_filterlist.txt" near executable.
 
