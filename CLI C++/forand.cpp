@@ -5,13 +5,25 @@
 #include <fstream>    //for ifstream
 #include <unistd.h>   //for getlogin()
 
-void draw_progress_bar(int current_percent) {
+void draw_progress_bar(const int &index, const int &total) {
+	int current_percent = (index * 100) / (total);
 	int filler_total_lenght = 60;
 	int filler_lenght = (current_percent * filler_total_lenght)/100;
 	int space_lenght = filler_total_lenght - filler_lenght;
 	std::string filler(filler_lenght, '#'), spacer(space_lenght, ' ');
 
 	std::cout << "Working: [" << filler << spacer << "] " << current_percent << "%\r";
+	if (index == total) {std::cout << std::endl;};
+}
+
+void rename_file(const std::string &old_path, const std::string &new_path){
+	const char *char_old_path = old_path.c_str();
+	const char *char_new_path = new_path.c_str();
+
+	int result = rename(char_old_path, char_new_path);
+	if (result != 0) {
+		perror("Couldn't rename file (ʘдʘ╬)");
+	};
 }
 
 void get_filter_list(std::vector<std::string> &filter_triggers, std::filesystem::path &launch_path){
@@ -54,13 +66,13 @@ void get_filter_list(std::vector<std::string> &filter_triggers, std::filesystem:
 		std::cout << "Loaded built-in filters." << std::endl;
 	} else { //Loading filters list from forand_filterlist.txt
 		std::string line;
-		int i = 0;
+		//int i = 0;
 		std::ifstream file (path_to_filter_file);
 
 		if (file.is_open()) {
 			while (getline(file, line, ',')) {
 				filter_triggers.push_back(line);
-				++i;
+				//++i;
 			};
 		};
 		file.close();
@@ -68,18 +80,21 @@ void get_filter_list(std::vector<std::string> &filter_triggers, std::filesystem:
 	};
 }
 
+std::string padd_number(int number, int &number_len){
+	std::string number_string = std::to_string(number);
+	if (number_string.size() < number_len) {
+		number_string.insert(0, number_len - number_string.size(),'0');
+	};
+
+	return number_string;
+}
+
 std::string get_rand_num(int &random_number_max, int &random_number_len){
 	std::random_device rd; 
 	std::mt19937 mersenne(rd());
 	std::uniform_int_distribution dist{0, random_number_max};
-	
-	//Adding zero paddig to random number
-	std::string random_number = std::to_string(dist(mersenne));
-	if (random_number.size() < random_number_len) {
-		random_number.insert(0,random_number_len - random_number.size(),'0');
-	};
 
-	return random_number;
+	return padd_number(dist(mersenne), random_number_len);
 }
 
 std::string unrand_file_name(std::string file_name){
@@ -121,11 +136,66 @@ bool macOS_junk(std::string &file_name) {
 	return false;
 }
 
+void serialize_file_names (std::string &path_to_folder){
+	//Getting list of files in folder and their total number
+	std::vector<std::filesystem::path> folder_contents;
+	int files_in_folder = 0;
+	for (const auto &entry : std::filesystem::directory_iterator(path_to_folder)) {
+		folder_contents.push_back(entry.path());
+		++files_in_folder;
+	};
+	//Getting lenght of number of files
+	int number_len = std::to_string(files_in_folder).size();
+	//Sorting array in alphabet order
+	std::sort(folder_contents.begin(), folder_contents.end());
+
+	int file_counter = 0, ser_counter = 0;
+	std::string file_name, file_path, old_path;
+	//Looping through paths in folder_contents vector
+	for (std::filesystem::path &path_to_file : folder_contents) {
+		//Checking if entry is macOS trash or folder
+		file_name = path_to_file.filename();
+		if(macOS_junk(file_name)){
+			++file_counter;
+			draw_progress_bar(file_counter, files_in_folder);
+			continue;
+		};
+		if(std::filesystem::is_directory(path_to_file)){
+			++file_counter;
+			draw_progress_bar(file_counter, files_in_folder);
+			continue;
+		};
+
+		file_path = path_to_file.parent_path();
+
+		//Renaming file
+		old_path = file_path + "/" + file_name;
+
+		//Unrandomizing file before continuing
+		if(isdigit(file_name[0])) {
+			file_name = unrand_file_name(file_name);
+		};
+
+		file_name = padd_number(ser_counter, number_len) + "_" + file_name;
+		path_to_file = file_path + "/"  + file_name;
+		rename_file(old_path, path_to_file);
+
+		//Calculating percent of work done
+		++file_counter;
+		++ser_counter;
+		draw_progress_bar(file_counter, files_in_folder);
+	};
+
+	//Ouptut additional data
+	std::cout << "Files serialized: " << ser_counter << std::endl;
+}
+
 void print_help(){
-	std::cout << "usage: for [-fur] [\"/path/to/folder\"] ...\n"
+	std::cout << "usage: for [-furs] [\"/path/to/folder\"] ...\n"
 			  << "-r  randomize files in folder.\n"
 			  << "-u  unrandomize files in folder.\n"
-			  << "-f  filter files in folder." << std::endl;
+			  << "-f  filter files in folder.\n"
+			  << "-s  serialize files in folder." << std::endl;
 }
 
 int main(int argc, char const *argv[]) {
@@ -135,14 +205,17 @@ int main(int argc, char const *argv[]) {
 		return 1;
 	};
 
+	bool serialize = false;
 	//Checking options passed to the app
 	std::string options_string = argv[1];
 	for (char option : options_string){
-		if (option != '-' && option != 'f' && option != 'u' && option != 'r'){
+		if (option != '-' && option != 'f' && option != 'u' && option != 'r' && option != 's'){
 			std::cout << "Error: Invalid option: " << option << std::endl;
 			print_help();
 			return 1;
 		};
+		//setting serialize variable
+		if (option == 's') {serialize = true;};
 	};
 	options_string.erase(0,1);
 
@@ -185,11 +258,9 @@ int main(int argc, char const *argv[]) {
 		};
 		random_number_max -= 1;
 
-		draw_progress_bar(0);
 		int file_counter = 0, filt_counter = 0, rand_counter = 0, unrand_counter = 0;
 
 		//Looping through paths in folder_contents
-		int current_position = 0;
 		std::string file_name, file_path, old_path, random_number;
 
 		for (std::filesystem::path &path_to_file : folder_contents) {
@@ -197,11 +268,15 @@ int main(int argc, char const *argv[]) {
 			//Checking if entry is macOS trash or folder
 			file_name = path_to_file.filename();
 			if(macOS_junk(file_name)){
-				++current_position;
+				//Calculating percent of work done
+				++file_counter;
+				draw_progress_bar(file_counter, files_in_folder);
 				continue;
 			};
 			if(std::filesystem::is_directory(path_to_file)){
-				++current_position;
+				//Calculating percent of work done
+				++file_counter;
+				draw_progress_bar(file_counter, files_in_folder);
 				continue;
 			};
 			file_path = path_to_file.parent_path();
@@ -222,14 +297,8 @@ int main(int argc, char const *argv[]) {
 
 					//Moving file to trash
 					old_path = file_path + "/" + file_name;
-					const char *char_old_path = old_path.c_str();
 					path_to_file = trash_path + "/" + file_name;
-					const char *char_new_path = path_to_file.c_str();
-
-					int result = rename(char_old_path, char_new_path);
-					if (result != 0) {
-						perror("Couldn't rename file (ʘдʘ╬)");
-					};
+					rename_file(old_path, path_to_file);
 
 					++filt_counter;
 					goto exit_options_cycle;
@@ -240,22 +309,16 @@ int main(int argc, char const *argv[]) {
 
 					//Renaming file
 					old_path = file_path + "/" + file_name;
-					const char *char_old_path = old_path.c_str();
 					file_name = unrand_file_name(file_name);
 					path_to_file = file_path + "/" + file_name;
-					const char *char_new_path = path_to_file.c_str();
+					rename_file(old_path, path_to_file);
 
-					int result = rename(char_old_path, char_new_path);
-					if (result != 0) {
-						perror("Couldn't rename file (ʘдʘ╬)");
-					};
 					++unrand_counter;
 					break;
 				}
 				case 'r':{
 					//Renaming file
 					old_path = file_path + "/" + file_name;
-					const char *char_old_path = old_path.c_str();
 
 					//Unrandomizing file before continuing
 					if(isdigit(file_name[0])) {
@@ -264,12 +327,8 @@ int main(int argc, char const *argv[]) {
 
 					file_name = get_rand_num(random_number_max, random_number_len) + "_" + file_name;
 					path_to_file = file_path + "/"  + file_name;
-					const char *char_new_path = path_to_file.c_str();
+					rename_file(old_path, path_to_file);
 
-					int result = rename(char_old_path, char_new_path);
-					if (result != 0) {
-						perror("Couldn't rename file (ʘдʘ╬)");
-					};
 					++rand_counter;
 					break;
 				}
@@ -285,25 +344,25 @@ int main(int argc, char const *argv[]) {
 
 			//Calculating percent of work done
 			++file_counter;
-			int current_percent = (file_counter * 100) / (files_in_folder);
-			draw_progress_bar(current_percent);
+			draw_progress_bar(file_counter, files_in_folder);
 		} // for >> folder_contents
 
-		// Draw 100% progress bar when finished with folder
-		draw_progress_bar(100);
-		std::cout << std::endl;
-
 		//Ouptut additional data
-		if (filt_counter > 0){
+		if (filt_counter > 0) {
 			std::cout << "Files filtered: " << filt_counter << " ";
 		};
-		if (unrand_counter > 0){
+		if (unrand_counter > 0) {
 			std::cout << "Files unrandomized: " << unrand_counter << " ";
 		};
-		if (rand_counter > 0){
+		if (rand_counter > 0) {
 			std::cout << "Files randomized: " << rand_counter << " ";
 		};
-		std::cout<< std::endl;
+		std::cout << std::endl;
+
+		//Serializing files if option present
+		if (serialize) {
+			serialize_file_names(path_to_folder);
+		};
 	} //for >> paths array
 			
 	return 0;
