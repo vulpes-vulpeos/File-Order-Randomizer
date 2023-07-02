@@ -37,10 +37,11 @@ This version has command-line interface and supports external filter list. Put "
 
 Usage:
 ```
-["/path/to/forand/executable"] [-fur] ["/path/to/folder"]
+["/path/to/forand/executable"] [-furs] ["/path/to/folder"]
 -r  randomize files in folder.
 -u  unrandomize files in folder.
 -f  remove files which contain strings/characters from filter list in their file names.
+-s  serialize files in folder.
 ```
 
 **CLI Go:**
