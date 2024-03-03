@@ -2,7 +2,7 @@
 A simple script and app that can randomize files order by adding random numbers at the beginning of files names.
 It’s useful if your car is too dumb to shuffle a lot of music properly.
 
-It automatically count how many digits random number is needed, it will detect if file was already randomized and rerandomize it. While unrandomizing it ignores files which do not start with number and automatically counts how many numbers it needs to delete (supported separators: "_", ". ").
+It automatically count how many digits in random number is needed, it will detect if file was already randomized and rerandomize it. While unrandomizing it ignores files which do not start with number and automatically counts how many numbers it needs to delete (supported separators: "_", ". ").
 
 **AppleScript:**
 
@@ -55,6 +55,22 @@ Usage:
 -u  unrandomize files in folder.
 -f  remove files which contain strings/characters from filter list in their file names.
 ```
+
+**CLI C:**
+
+You can compile it with gcc: ```gcc "path/to/forand.c" -o "output/path" ```.
+
+This version has command-line interface and supports external filter list. Put "forand_filterlist.txt" near executable.
+
+Usage:
+```
+["/path/to/forand/executable"] [-furs] ["/path/to/folder"]
+-f  move files which contain strings/characters from filter list in their file names in "filtered" folder.
+-u  unrandomize files in folder.
+-r  randomize files in folder.
+-s  serialize files in folder.
+```
+
 
 Tested on m1 Macbook Air with macOS Ventura.
 
