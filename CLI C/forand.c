@@ -7,6 +7,10 @@
 #include <time.h>     // for rand()
 #include <sys/stat.h> // for mkdir()
 
+#ifdef __APPLE__
+#include <libproc.h> // for proc_pidpath()
+#endif
+
 void unrand_filename(char **file_name);
 
 // for qsort()
@@ -14,7 +18,7 @@ int comp_str(const void *a, const void *b) {
     return strcmp(*(const char **)a, *(const char **)b);
 }
 
-void ser_filename(char **file_name, uint * const num_str_len, uint * const num){
+void ser_filename(char **file_name, unsigned int * const num_str_len, unsigned int * const num){
     // Remove numbers from previous operations if needed
     if (isdigit(*file_name[0])){unrand_filename(file_name);};
     
@@ -88,7 +92,7 @@ int filter_func(char **file_name, char ***filter_list_arr, int *tokens_num){
     return 0;
 }
 
-void draw_progressbar(const uint *index, const uint *total){
+void draw_progressbar(const unsigned int *index, const unsigned int *total){
     int cur_per = ((*index) * 100) / (*total);
     int bar_len = 60;
     int fill_len = (cur_per * bar_len)/100;
@@ -149,6 +153,7 @@ void form_filterlist(char ***filter_list_arr, char *launch_path, int *tokens_num
     //Forming filter file path
     char *filter_file_path = calloc(strlen(launch_path) + 23, sizeof(char));
     sprintf(filter_file_path,"%s/forand_filterlist.txt", launch_path);
+    //printf("Filter file path: %s\n", filter_file_path);
 
     if(access(filter_file_path, F_OK) != 0) {
         // Loading default list if forand_filterlist.txt not found
@@ -305,7 +310,8 @@ int main(int argc, char *argv[]){
     // Looping through provided paths
     for (int i = 0; i < paths_num; ++i){
         // Getting number of files in folder
-        uint num_of_files = get_num_of_files(folders_to_parse_arr[i]);
+        unsigned int num_of_files = get_num_of_files(folders_to_parse_arr[i]);
+        //printf("Number of files in %s: %d\n", folders_to_parse_arr[i], num_of_files);
         if (num_of_files == 0) { continue;};
 
         // Forming path for filtered files
@@ -334,7 +340,7 @@ int main(int argc, char *argv[]){
             fold_cont_arr = (char **)malloc(num_of_files * sizeof(char *));
         };
         // Counters
-        uint file_count   = 0, 
+        unsigned int file_count   = 0, 
              filter_count = 0, 
              random_count = 0, 
              unrand_count = 0,
@@ -358,13 +364,16 @@ int main(int argc, char *argv[]){
             char *old_full_path;
             char *new_full_path;
             char *file_name = entry->d_name;
+            //printf("File name: %s\n", file_name);
 
             // Filtering
             if (filter && filter_func(&file_name, &filter_list_arr, &tokens_num)){
                 // Forming old full path
                 form_full_path(&old_full_path, fold_path, file_name);
+                //printf("\033[1;31mFilter old path\033[0m: %s\n", old_full_path);
                 // Forming new full path
                 form_full_path(&new_full_path, filter_path, file_name);
+                //printf("\033[1;31mFilter new path\033[0m: %s\n", new_full_path);
                 // Move file to filtered older
                 if(rename(old_full_path, new_full_path)) {perror("ERROR: "); exit(1);};
 
@@ -380,9 +389,11 @@ int main(int argc, char *argv[]){
             if (unrand && isdigit(file_name[0])){
                 // Forming old full path
                 form_full_path(&old_full_path, fold_path, file_name);
+                //printf("\033[1;32mUnrand old path\033[0m: %s\n", old_full_path);
                 // Forming new full path
                 unrand_filename(&file_name);
                 form_full_path(&new_full_path, fold_path, file_name);
+                //printf("\033[1;32mUnrand new path\033[0m: %s\n", new_full_path);
 
                 // Rename file
                 if(strlen(old_full_path) != strlen(new_full_path)){
@@ -397,9 +408,11 @@ int main(int argc, char *argv[]){
             if (random){
                 // Forming old full path
                 form_full_path(&old_full_path, fold_path, file_name);
+                //printf("\033[1;35mRand old path\033[0m: %s\n", old_full_path);
                 // Forming new full path
                 rand_filename(&file_name, &rand_num_max, &rand_num_len);
                 form_full_path(&new_full_path, fold_path, file_name);
+                //printf("\033[1;35mRand new path\033[0m (%d max): %s\n", rand_num_max, new_full_path);
 
                 // Rename file
                 if(rename(old_full_path, new_full_path)) {perror("ERROR: "); exit(1);};
@@ -433,12 +446,14 @@ int main(int argc, char *argv[]){
         // Continue loop if no need for serialization
         if (!serial){
             closedir(dir_ptr);
+            //printf("Completed folder cycle.\n");
             continue;
         };
 
         // Performing serialization
         qsort(fold_cont_arr, ser_arr_size, sizeof(char *), comp_str);
-        uint num_str_len = snprintf(NULL, 0, "%d", ser_arr_size);
+        unsigned int num_str_len = snprintf(NULL, 0, "%d", ser_arr_size);
+        //printf("Serialization array size: %d\n", ser_arr_size);
 
         // Draw empty progressbar
         file_count = 0;
@@ -446,12 +461,14 @@ int main(int argc, char *argv[]){
 
         char *old_full_path;
         char *new_full_path;
-        for (uint i = 0, bar_ind = 1; i < ser_arr_size; ++i, ++bar_ind){
+        for (unsigned int i = 0, bar_ind = 1; i < ser_arr_size; ++i, ++bar_ind){
             // Forming old full path
             form_full_path(&old_full_path, fold_path, fold_cont_arr[i]);
+            //printf("\033[1;34mSerial old path\033[0m: %s\n", old_full_path);
             // Forming new full path
             ser_filename(&fold_cont_arr[i], &num_str_len, &i);
             form_full_path(&new_full_path, fold_path, fold_cont_arr[i]);
+            //printf("\033[1;34mSerial new path\033[0m: %s\n", new_full_path);
             // Rename file
             if(rename(old_full_path, new_full_path)) {perror("ERROR: "); exit(1);};
             
@@ -466,6 +483,7 @@ int main(int argc, char *argv[]){
         free(fold_cont_arr);
 
         closedir(dir_ptr);
+        //printf("Completed folder cycle.\n");
     };
 
     // free allocated memory;
