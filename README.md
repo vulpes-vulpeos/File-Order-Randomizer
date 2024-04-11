@@ -29,7 +29,7 @@ Or download .app bundle from release section. You'll need to allow it's launch i
 
 This version uses applescript dialogs as its UI.
 
-**CLI C++:**
+**CLI C++: (macOS & Linux)**
 
 You can compile it with g++: ```g++ -std=c++2a -O2 -Wall \"${file}\"  -o \"${file_path}/${file_base_name}\" ```.
 
@@ -56,7 +56,7 @@ Usage:
 -f  remove files which contain strings/characters from filter list in their file names.
 ```
 
-**CLI C:**
+**CLI C: (Linux)**
 
 You can compile it with gcc: ```gcc "path/to/forand.c" -o "output/path" ```.
 
