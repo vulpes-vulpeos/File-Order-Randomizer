@@ -29,11 +29,13 @@ Or download .app bundle from release section. You'll need to allow it's launch i
 
 This version uses applescript dialogs as its UI.
 
+
 **CLI C++: (macOS & Linux)**
 
 You can compile it with g++: ```g++ -std=c++2a -O2 -Wall \"${file}\"  -o \"${file_path}/${file_base_name}\" ```.
 
-This version has command-line interface and supports external filter list. Put "forand_filterlist.txt" near executable.
+This version has command-line interface and supports external filter list. Put "forand_filterlist.txt" near executable.\
+Supported separators: "_", ". ", " - ".
 
 Usage:
 ```
@@ -43,6 +45,7 @@ Usage:
 -f  remove files which contain strings/characters from filter list in their file names.
 -s  serialize files in folder.
 ```
+
 
 **CLI Go:**
 
@@ -56,11 +59,13 @@ Usage:
 -f  remove files which contain strings/characters from filter list in their file names.
 ```
 
-**CLI C: (Linux)**
+
+**CLI C: (macOS & Linux)**
 
 You can compile it with gcc: ```gcc "path/to/forand.c" -o "output/path" ```.
 
-This version has command-line interface and supports external filter list. Put "forand_filterlist.txt" near executable.
+This version has command-line interface and supports external filter list. Put "forand_filterlist.txt" near executable.\
+Supported separators: "_", ". ", " - ".
 
 Usage:
 ```
@@ -72,6 +77,6 @@ Usage:
 ```
 
 
-Tested on m1 Macbook Air with macOS Ventura.
+Tested on m1 Macbook Air with macOS Ventura and HP EliteDesk 800 G3 DM 35W with Debian Sid.
 
 Idea was taken from this windows app: <https://sourceforge.net/projects/filerandomizer/>
