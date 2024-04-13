@@ -27,7 +27,7 @@ void ser_filename(char **file_name, unsigned int * const num_str_len, unsigned i
     snprintf(ser_num_str, (*num_str_len)+3, "%0*u. ", *num_str_len, *num+1);
     // Moving memory forward
     memmove(*file_name + (*num_str_len)+2, *file_name, strlen(*file_name)+1);
-    // Inserting random number string
+    // Inserting serial number string
     memcpy(*file_name, ser_num_str, (*num_str_len)+2);
 
     free(ser_num_str);
@@ -132,6 +132,21 @@ int ignore_file(struct dirent *entry){
     };
 
     return 0;
+}
+
+void fill_filenames_arr (char **folder_path, char ***filenames_arr){
+    struct dirent *entry;
+    DIR *dir_ptr = opendir(*folder_path);
+    if(dir_ptr == NULL) {perror("ERROR: "); return;};
+
+    int index = 0;
+    while ((entry = readdir(dir_ptr)) != NULL){
+        if (ignore_file(entry)) {continue;};
+        (*filenames_arr)[index] = malloc(strlen(entry->d_name) * sizeof(char) +1);
+        strcpy((*filenames_arr)[index], entry->d_name);
+        ++index;
+    };
+    closedir(dir_ptr);
 }
 
 int get_num_of_files (char *folder_path){
@@ -314,6 +329,10 @@ int main(int argc, char *argv[]){
         //printf("Number of files in %s: %d\n", folders_to_parse_arr[i], num_of_files);
         if (num_of_files == 0) { continue;};
 
+        // Filling list of file names 
+        char **filenames_arr = (char **)malloc(num_of_files * sizeof(char *));
+        fill_filenames_arr(&folders_to_parse_arr[i], &filenames_arr);
+
         // Forming path for filtered files
         char *filter_path;
         if (filter){
@@ -335,9 +354,9 @@ int main(int argc, char *argv[]){
         };
 
         // Prepairing array for serialization
-        char **fold_cont_arr;
+        char **ser_arr;
         if (serial){
-            fold_cont_arr = (char **)malloc(num_of_files * sizeof(char *));
+            ser_arr = (char **)malloc(num_of_files * sizeof(char *));
         };
         // Counters
         unsigned int file_count   = 0, 
@@ -354,25 +373,18 @@ int main(int argc, char *argv[]){
         char *fold_path = folders_to_parse_arr[i],
              *random_num;
 
-        struct dirent *entry;
-        DIR *dir_ptr = opendir(fold_path);
-        if(dir_ptr == NULL) {perror("ERROR: "); return 1;};
-        
-        while ((entry = readdir(dir_ptr)) != NULL){
-            if (ignore_file(entry)) {continue;};
-            
+        for (int i = 0; i < num_of_files; ++i){
             char *old_full_path;
             char *new_full_path;
-            char *file_name = entry->d_name;
-            //printf("File name: %s\n", file_name);
+            //printf("File name: %s\n", filenames_arr[i]);
 
             // Filtering
-            if (filter && filter_func(&file_name, &filter_list_arr, &tokens_num)){
+            if (filter && filter_func(&filenames_arr[i], &filter_list_arr, &tokens_num)){
                 // Forming old full path
-                form_full_path(&old_full_path, fold_path, file_name);
+                form_full_path(&old_full_path, fold_path, filenames_arr[i]);
                 //printf("\033[1;31mFilter old path\033[0m: %s\n", old_full_path);
                 // Forming new full path
-                form_full_path(&new_full_path, filter_path, file_name);
+                form_full_path(&new_full_path, filter_path, filenames_arr[i]);
                 //printf("\033[1;31mFilter new path\033[0m: %s\n", new_full_path);
                 // Move file to filtered older
                 if(rename(old_full_path, new_full_path)) {perror("ERROR: "); exit(1);};
@@ -380,19 +392,22 @@ int main(int argc, char *argv[]){
                 ++file_count;
                 ++filter_count;
 
+                // Update progressbar
+                draw_progressbar(&file_count, &num_of_files);
+
                 free(old_full_path);
                 free(new_full_path);
 
                 continue;
             };
             // Unrandomizing
-            if (unrand && isdigit(file_name[0])){
+            if (unrand && isdigit(filenames_arr[i][0])){
                 // Forming old full path
-                form_full_path(&old_full_path, fold_path, file_name);
+                form_full_path(&old_full_path, fold_path, filenames_arr[i]);
                 //printf("\033[1;32mUnrand old path\033[0m: %s\n", old_full_path);
                 // Forming new full path
-                unrand_filename(&file_name);
-                form_full_path(&new_full_path, fold_path, file_name);
+                unrand_filename(&filenames_arr[i]);
+                form_full_path(&new_full_path, fold_path, filenames_arr[i]);
                 //printf("\033[1;32mUnrand new path\033[0m: %s\n", new_full_path);
 
                 // Rename file
@@ -407,11 +422,11 @@ int main(int argc, char *argv[]){
             // Randomizing
             if (random){
                 // Forming old full path
-                form_full_path(&old_full_path, fold_path, file_name);
+                form_full_path(&old_full_path, fold_path, filenames_arr[i]);
                 //printf("\033[1;35mRand old path\033[0m: %s\n", old_full_path);
                 // Forming new full path
-                rand_filename(&file_name, &rand_num_max, &rand_num_len);
-                form_full_path(&new_full_path, fold_path, file_name);
+                rand_filename(&filenames_arr[i], &rand_num_max, &rand_num_len);
+                form_full_path(&new_full_path, fold_path, filenames_arr[i]);
                 //printf("\033[1;35mRand new path\033[0m (%d max): %s\n", rand_num_max, new_full_path);
 
                 // Rename file
@@ -424,7 +439,8 @@ int main(int argc, char *argv[]){
             // Serialization
             if(serial){
                 // Adding last filename to serialize array
-                fold_cont_arr[index] = file_name;
+                ser_arr[index] = malloc(strlen(filenames_arr[i]) * sizeof(char) +1);
+                strcpy(ser_arr[index], filenames_arr[i]);
                 ++ser_arr_size;
             };
 
@@ -443,15 +459,18 @@ int main(int argc, char *argv[]){
             free(filter_path);
         };
 
+        // free allocated memory;
+        for (int i = 0; i < num_of_files; ++i) {free(filenames_arr[i]);};
+        free(filenames_arr);
+
         // Continue loop if no need for serialization
         if (!serial){
-            closedir(dir_ptr);
             //printf("Completed folder cycle.\n");
             continue;
         };
 
         // Performing serialization
-        qsort(fold_cont_arr, ser_arr_size, sizeof(char *), comp_str);
+        qsort(ser_arr, ser_arr_size, sizeof(char *), comp_str);
         unsigned int num_str_len = snprintf(NULL, 0, "%d", ser_arr_size);
         //printf("Serialization array size: %d\n", ser_arr_size);
 
@@ -463,11 +482,11 @@ int main(int argc, char *argv[]){
         char *new_full_path;
         for (unsigned int i = 0, bar_ind = 1; i < ser_arr_size; ++i, ++bar_ind){
             // Forming old full path
-            form_full_path(&old_full_path, fold_path, fold_cont_arr[i]);
+            form_full_path(&old_full_path, fold_path, ser_arr[i]);
             //printf("\033[1;34mSerial old path\033[0m: %s\n", old_full_path);
             // Forming new full path
-            ser_filename(&fold_cont_arr[i], &num_str_len, &i);
-            form_full_path(&new_full_path, fold_path, fold_cont_arr[i]);
+            ser_filename(&ser_arr[i], &num_str_len, &i);
+            form_full_path(&new_full_path, fold_path, ser_arr[i]);
             //printf("\033[1;34mSerial new path\033[0m: %s\n", new_full_path);
             // Rename file
             if(rename(old_full_path, new_full_path)) {perror("ERROR: "); exit(1);};
@@ -480,9 +499,9 @@ int main(int argc, char *argv[]){
         printf("Serialized: %d\n", ser_arr_size);
 
         // free allocated memory;
-        free(fold_cont_arr);
+        for (int i = 0; i < ser_arr_size; ++i) {free(ser_arr[i]);};
+        free(ser_arr);
 
-        closedir(dir_ptr);
         //printf("Completed folder cycle.\n");
     };
 
