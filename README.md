@@ -47,16 +47,20 @@ Usage:
 ```
 
 
-**CLI Go:**
+**CLI Go: (macOS & Linux)**
 
 You can compile it with: ```go build -ldflags \"-w -s\" '${file}' ```.
 
+This version has command-line interface and supports external filter list. Put "forand_filterlist.txt" near executable.\
+Supported separators: "_", ". ", " - ".
+
 Usage:
 ```
-["/path/to/forand/executable"] [-fur] ["/path/to/folder"]
--r  randomize files in folder.
+["/path/to/forand/executable"] [-furs] ["/path/to/folder"]
+-f  move files which contain strings/characters from filter list in their file names in "filtered" folder.
 -u  unrandomize files in folder.
--f  remove files which contain strings/characters from filter list in their file names.
+-r  randomize files in folder.
+-s  serialize files in folder.
 ```
 
 
