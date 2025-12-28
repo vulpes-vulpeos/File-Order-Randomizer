@@ -68,19 +68,17 @@ Usage:
 
 You can compile it with gcc: ```gcc "path/to/forand.c" -o "output/path" ```.
 
-This version has command-line interface and supports external filter list. Put "forand_filterlist.txt" near executable.\
-Supported separators: "_", ". ", " - ".
+This version has command-line interface. Supported separators: "_", ". ", " - ".
 
 Usage:
 ```
-["/path/to/forand/executable"] [-furs] ["/path/to/folder"]
--f  move files which contain strings/characters from filter list in their file names in "filtered" folder.
+["/path/to/forand/executable"] [-rusdh] ["/path/to/folder"]
 -u  unrandomize files in folder.
 -r  randomize files in folder.
 -s  serialize files in folder.
+-d  dry run with debug prints.\n");
+-h  show this message.
 ```
 
-
-Tested on m1 Macbook Air with macOS Ventura and HP EliteDesk 800 G3 DM 35W with Debian Sid.
-
+___   
 Idea was taken from this windows app: <https://sourceforge.net/projects/filerandomizer/>
